@@ -99,6 +99,70 @@ Oder er wird im falschen Moment gestartet.
 
 Darum nennt die description des check-Skills konkrete Auslöser wie „is it green?“ oder „run the checks“.
 
+
+Bonus: Context Lab
+
+1. 36.1k/1m tokens (4%)
+
+Warum ist der Kontext schon belegt, bevor ich etwas getippt habe? Claude Code lädt zuerst seinen Grundbestand:
+
+| Posten | Tokens | Was das ist |
+|---|---|---|
+| System tools | 25,9k | Die Schemas der eingebauten Werkzeuge (Bash, Edit, Read, Grep, Agent, Artifact usw.). Größter Posten. |
+| Skills | 5,1k | Name und description von 29 Skills (Projekt-Skill `check`, eingebaute und claude.ai-Sync-Skills). |
+| System prompt | 2,8k | Die Grundanweisungen an das Modell. |
+| CLAUDE.md | 0,8k | Die Projektanweisungen aus dem Repo. |
+| MCP tools + Instructions | 1,4k | Die claude.ai-Connectoren (Slack, Gmail, Notion …) und ihre Hinweise. |
+| Messages | 0,1k | `/clear` und `/context`. |
+
+Zusammen sind das etwa 36k. Nicht mitgezählt sind:
+
+- Deferred tools (39,5k MCP und 25,6k System): Sie werden erst bei Bedarf über ToolSearch geladen, vorher stehen nur ihre Namen im Kontext.
+- Autocompact buffer (33k): Er ist nur reserviert, nicht belegt.
+
+Frei bleiben 930,9k Tokens (93 %). Den Grundbestand kann man verkleinern, indem man in `/mcp` ungenutzte Connectoren trennt und in `/skills` ungenutzte Skills abschaltet. Die 25,9k System tools sind fest.
+
+2. 70k/1m tokens (7%) er hat den verbrauch fast verdoppelt.
+
+3. Zur /context-Ausgabe: Der Kontext ist von 36,1k auf 70k Tokens gestiegen. Fast der ganze Zuwachs sind die 34k bei Messages. Das sind die gelesenen src-Dateien und die Zusammenfassung. Der Grundbestand ist mit etwa 36k gleich geblieben. Dafür sind die System tools leicht von 25,9k auf 26,6k gewachsen. Die MCP-Tools werden jetzt mit 0 Tokens als on-demand geführt.
+
+4. 56.2k/1m tokens (6%)
+❯ What did I ask you in the beginning?” What do you remember, and what is lost?
+
+Your first request (from the summary, not word for word): you started a new session with /clear and /context and wrote: "Start a new session and run /context. Write down how much is already used before you typed anything. What takes up that space? es sind schon 36,1k wieso ohne frage". You wanted to know why 36.1k tokens were already used before you typed anything.
+
+What I remember (in summary form):
+- I explained the 36.1k baseline: system tools, skills, system prompt, CLAUDE.md, and MCP tools and instructions. Deferred tools and the autocompact buffer aren't counted as used.
+- I added that explanation to the README under "Bonus: Context Lab".
+- You asked me to read and summarize all files in src. I noted that EmptyShelf is unused and that BookCard, BookList and Stats have no tests.
+- You pasted a second /context (70k, 7%), and npm run build succeeded.
+- Then came /context at 78.1k, /compact, and /context at 56.2k.
+
+What is lost or only approximate:
+- The exact wording of your messages and my earlier replies is gone. I only have the compressed summary.
+- The src file contents I read are gone, apart from what the summary keeps. After the compaction I re-read the README, books.ts, App.test.tsx and EmptyShelf, so I know those
+  again.
+- Everything before the /clear is not in this context. That includes the  failed addBook edit. I only know it from your README notes.
+- The README has changed since I edited it. Your additions are now visible, and I won't revert them.
+
+What is not lost: the CLAUDE.md rules, the tool and skill definitions, and the system prompt are reloaded every session. That is why the baseline stays near 36k.
+
+The compaction cut Messages from 42.1k to 21k tokens. The full transcript is still on disk as a .jsonl file, so I can look up exact details if you need them.
+
+5. Ja, die CLAUDE.md wird nach dem /clear weiterhin geladen. Das zeigt die /context-Ausgabe unter "Memory files":
+
+- 1 Datei, 837 Tokens
+- Typ Project, Pfad C:\Users\atgam\web-bootcamp\ai-working-with-coding-agents_add-book-feature\CLAUDE.md
+
+Die Inhalte (Stack, Befehle, Architektur, Konventionen, "Off limits") liegen mir in dieser Sitzung auch vor. /clear leert nur den Gesprächsverlauf. Die CLAUDE.md wird bei jedem Start oder /clear neu eingelesen.
+
+6. 
+1. Die CLAUDE.md gilt in jeder Sitzung, auch nach /clear. Ich halte mich an ihre Vorgaben, ohne dass sie jemand wiederholen muss. Dazu gehören npm run test:run statt npm test, kein Bearbeiten von src/data.ts und keine neuen Abhängigkeiten ohne
+  Rückfrage.
+2. Ich verlasse mich auf die CLAUDE.md und lese sie nicht erneut. Sie liegt schon im Kontext. Wenn ich unsicher bin, schaue ich dort nach, statt zu raten. Ändert sich die Datei mitten in der Sitzung, lese ich sie neu ein, weil mein Stand dann veraltet sein kann.
+3. Was in der CLAUDE.md steht, speichere ich nicht zusätzlich im Memory. Dort lege ich nur Dinge ab, die nicht im Repo stehen, zum Beispiel Vorlieben von dir oder Hintergründe zum Projekt. Sonst gibt es zwei Quellen, die au
+
+
 ## Development
 
 Install the dependencies with `npm i` first (Node.js 22.22 or newer is required).
