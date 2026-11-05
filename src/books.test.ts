@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  addBook,
   averageRating,
   countRead,
   filterBooks,
@@ -50,6 +51,63 @@ describe("removeBook", () => {
   test("removes the book with the given id", () => {
     const result = removeBook(initialBooks, "b2");
     expect(result.map((book) => book.id)).toEqual(["b1", "b3", "b4", "b5"]);
+  });
+});
+
+describe("addBook", () => {
+  const input = {
+    title: "  Emma ",
+    author: " Jane Austen  ",
+    genre: "mystery" as const,
+    rating: 4,
+  };
+
+  test("adds an unread book with trimmed title and author", () => {
+    const result = addBook(initialBooks, input);
+    if ("error" in result) {
+      throw new Error(result.error);
+    }
+    expect(result.books).toHaveLength(6);
+    expect(result.books[5]).toMatchObject({
+      title: "Emma",
+      author: "Jane Austen",
+      genre: "mystery",
+      rating: 4,
+      isRead: false,
+    });
+  });
+
+  test("does not change the original list", () => {
+    const books = structuredClone(initialBooks);
+    addBook(books, input);
+    expect(books).toEqual(initialBooks);
+  });
+
+  test("rejects an empty title or author", () => {
+    expect(addBook(initialBooks, { ...input, title: "   " })).toHaveProperty(
+      "error"
+    );
+    expect(addBook(initialBooks, { ...input, author: "" })).toHaveProperty(
+      "error"
+    );
+  });
+
+  test("rejects the same title and author ignoring upper and lower case", () => {
+    const result = addBook(initialBooks, {
+      ...input,
+      title: " dune ",
+      author: "FRANK HERBERT",
+    });
+    expect(result).toEqual({ error: "This book is already on your shelf." });
+  });
+
+  test("accepts the same title by another author", () => {
+    const result = addBook(initialBooks, {
+      ...input,
+      title: "Dune",
+      author: "Someone Else",
+    });
+    expect(result).toHaveProperty("books");
   });
 });
 

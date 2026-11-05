@@ -1,4 +1,11 @@
-import type { Book, GenreFilter } from "./types";
+import type { Book, Genre, GenreFilter } from "./types";
+
+export type NewBook = {
+  title: string;
+  author: string;
+  genre: Genre;
+  rating: number;
+};
 
 type Filter = {
   genre: GenreFilter;
@@ -22,6 +29,38 @@ export function toggleRead(books: Book[], id: string): Book[] {
 
 export function removeBook(books: Book[], id: string): Book[] {
   return books.filter((book) => book.id !== id);
+}
+
+/**
+ * Adds an unread book. Title and author are trimmed and required; a book with
+ * the same title and author (ignoring case) is rejected.
+ */
+export function addBook(
+  books: Book[],
+  input: NewBook
+): { books: Book[] } | { error: string } {
+  const title = input.title.trim();
+  const author = input.author.trim();
+  if (title === "" || author === "") {
+    return { error: "Title and author are required." };
+  }
+  const isDuplicate = books.some(
+    (book) =>
+      book.title.toLowerCase() === title.toLowerCase() &&
+      book.author.toLowerCase() === author.toLowerCase()
+  );
+  if (isDuplicate) {
+    return { error: "This book is already on your shelf." };
+  }
+  const book: Book = {
+    id: crypto.randomUUID(),
+    title,
+    author,
+    genre: input.genre,
+    rating: input.rating,
+    isRead: false,
+  };
+  return { books: [...books, book] };
 }
 
 export function countRead(books: Book[]): number {

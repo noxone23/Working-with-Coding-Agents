@@ -58,8 +58,11 @@ Acceptance criteria:
 ### Questions
 
 - What did Claude get right in the first plan, and what did it miss?
+The first attempt failed with addBook is not a function. One of the rejected edits had been the addBook change in src/books.ts, so it never landed. Adding it fixed the type errors and the failing tests.
 - Would you have found the problem **after** the code was written, as easily as in the plan?
+Claude told me before and after :P
 - How much context did the task use (`/context`)?
+ 96.8k/1m tokens (10%)
 
 ## Challenge 3: Write a Skill (🔥🔥)
 
@@ -69,12 +72,33 @@ A **skill** saves a workflow as a Markdown file in `.claude/skills/<name>/SKILL.
 2. **A `new-component` skill.** Create a skill that creates a new component following your conventions (folder, props type, test) and receives the name and the purpose as arguments: `/new-component EmptyShelf shows a message when no book matches`. Use `$ARGUMENTS` in the skill.
 3. **Test the skills** in a fresh conversation (`/clear`). Does `/new-component` produce what your `CLAUDE.md` demands? Does Claude use `/check` when you ask "does everything still work?" without the slash?
 4. Decide for each skill whether Claude should be allowed to start it on its own (`disable-model-invocation: true`), and explain why.
+Der check-Skill ist rein lesend: Er führt nur npm run check und npm run test:run aus und berichtet das Ergebnis. Er ändert, erstellt oder löscht keine Dateien und repariert nichts. Das ist durch allowed-tools auch technisch abgesichert, denn erlaubt sind nur diese zwei Befehle plus Lese-Tools. Weil er keine Nebenwirkungen hat und schnell fertig ist (kein Watch-Modus), ist es sinnvoll, dass Claude ihn automatisch nutzt, z. B. nach einer Änderung oder bevor es eine Aufgabe als erledigt meldet. Die description ist genau dafür geschrieben, dass Claude erkennt, wann der Skill passt.
+
+Der wichtigste Punkt ist das Zusammenspiel von zwei Absicherungen: Die Anweisung „nichts ändern“ steht im Text, und allowed-tools schränkt zusätzlich ein, was Claude überhaupt ausführen darf. Selbst wenn Claude ihn ungefragt startet, kann also nichts kaputtgehen. Genau deshalb braucht es hier keine manuelle Freigabe.
 5. Commit the skills, so the whole team gets them.
 
 ### Questions
 
 - What belongs in `CLAUDE.md` and what in a skill? (Hint: one is **always** loaded, the other only when it is used.)
+
+CLAUDE.md wird immer geladen: Bei jeder Sitzung landet der komplette Inhalt automatisch im Kontext. Von einem Skill steht anfangs nur die kurze description im Kontext. Der eigentliche Inhalt wird erst geladen, wenn der Skill tatsächlich benutzt wird.
+
+Daraus folgt: In CLAUDE.md gehört alles, was fast immer wichtig ist. Zum Beispiel, worum es im Projekt geht und wie es aufgebaut ist, wichtige Befehle (Build, Start, Tests), Code-Konventionen (z. B. „TypeScript, keine any“, Benennungsregeln) und feste Regeln wie „Nie npm test benutzen, das startet den Watch-Modus“. Halte die Datei kurz, weil sie in jeder Sitzung Platz im Kontextfenster kostet, auch wenn sie gerade nicht gebraucht wird.
+
+In einen Skill gehören konkrete Abläufe für bestimmte Aufgaben, die nur manchmal vorkommen. Zum Beispiel Schritt-für-Schritt-Workflows wie dein check-Skill, längere Anleitungen (Deployment, Release, Datenbank-Migration) und Aufgaben mit eigenen Tool-Rechten (allowed-tools) oder solche, die nur manuell gestartet werden sollen. Ein Skill darf ausführlicher sein, weil er den Kontext nur belastet, wenn er wirklich gebraucht wird.
+
+Dein Beispiel zeigt das gut: Der genaue Ablauf „erst npm run check, dann npm run test:run, dann so berichten“ steht im Skill. In CLAUDE.md könnte höchstens ein kurzer Hinweis stehen wie „Vor dem Abschluss einer Änderung die Checks laufen lassen.“
+
+Merksatz: CLAUDE.md ist das Grundwissen, das Claude immer braucht, ein Skill ist das Spezialwissen für eine bestimmte Aufgabe, das nur bei Bedarf geladen wird.
+
 - What happens when the `description` of a skill is vague?
+
+Dann weiß Claude nicht genau, wann der Skill passt, weil es anfangs nur die description sieht. Folgen:
+
+Der Skill wird nicht gestartet, obwohl er passen würde.
+Oder er wird im falschen Moment gestartet.
+
+Darum nennt die description des check-Skills konkrete Auslöser wie „is it green?“ oder „run the checks“.
 
 ## Development
 
